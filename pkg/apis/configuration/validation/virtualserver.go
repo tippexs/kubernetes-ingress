@@ -663,6 +663,8 @@ func (vsv *VirtualServerValidator) validateRoute(route v1.Route, fieldPath *fiel
 		allErrs = append(allErrs, field.Invalid(fieldPath, "", msg))
 	}
 
+	allErrs = append(allErrs, validateDos(route.Dos, fieldPath.Child("dos"))...)
+
 	return allErrs
 }
 

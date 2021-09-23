@@ -215,6 +215,7 @@ type virtualServerConfigurator struct {
 	warnings             Warnings
 	spiffeCerts          bool
 	oidcPolCfg           *oidcPolicyCfg
+	isDosEnabled         bool
 }
 
 type oidcPolicyCfg struct {
@@ -254,6 +255,7 @@ func newVirtualServerConfigurator(
 		warnings:             make(map[runtime.Object][]string),
 		spiffeCerts:          staticParams.NginxServiceMesh,
 		oidcPolCfg:           &oidcPolicyCfg{},
+		isDosEnabled:         staticParams.MainAppProtectDosLoadModule,
 	}
 }
 
@@ -304,6 +306,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 		vsName:         vsEx.VirtualServer.Name,
 	}
 	policiesCfg := vsc.generatePolicies(ownerDetails, vsEx.VirtualServer.Spec.Policies, vsEx.Policies, specContext, policyOpts)
+
 	dosCfg := generateDosCfg(dosResources[""])
 
 	// crUpstreams maps an UpstreamName to its conf_v1.Upstream as they are generated
@@ -437,7 +440,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 		}
 		limitReqZones = append(limitReqZones, routePoliciesCfg.LimitReqZones...)
 
-		dosRouteCfg := generateDosCfg(dosResources[r.Path])
+		dosRouteCfg := vsc.generateDos(vsEx.VirtualServer, dosResources[r.Path])
 
 		if len(r.Matches) > 0 {
 			cfg := generateMatchesConfig(
@@ -544,6 +547,9 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 				routePoliciesCfg.OIDC = policiesCfg.OIDC
 			}
 			limitReqZones = append(limitReqZones, routePoliciesCfg.LimitReqZones...)
+
+			dosRouteCfg := vsc.generateDos(vsEx.VirtualServer, dosResources[r.Path])
+
 			if len(r.Matches) > 0 {
 				cfg := generateMatchesConfig(
 					r,
@@ -563,6 +569,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 					vsr.Namespace,
 				)
 				addPoliciesCfgToLocations(routePoliciesCfg, cfg.Locations)
+				addDosConfigToLocations(dosRouteCfg, cfg.Locations)
 
 				maps = append(maps, cfg.Maps...)
 				locations = append(locations, cfg.Locations...)
@@ -574,6 +581,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 				cfg := generateDefaultSplitsConfig(r, upstreamNamer, crUpstreams, variableNamer, len(splitClients), vsc.cfgParams,
 					errorPages, errorPageIndex, r.Path, locSnippets, vsc.enableSnippets, len(returnLocations), isVSR, vsr.Name, vsr.Namespace)
 				addPoliciesCfgToLocations(routePoliciesCfg, cfg.Locations)
+				addDosConfigToLocations(dosRouteCfg, cfg.Locations)
 
 				splitClients = append(splitClients, cfg.SplitClients...)
 				locations = append(locations, cfg.Locations...)
@@ -587,6 +595,7 @@ func (vsc *virtualServerConfigurator) GenerateVirtualServerConfig(
 				loc, returnLoc := generateLocation(r.Path, upstreamName, upstream, r.Action, vsc.cfgParams, errorPages, false,
 					errorPageIndex, proxySSLName, r.Path, locSnippets, vsc.enableSnippets, len(returnLocations), isVSR, vsr.Name, vsr.Namespace)
 				addPoliciesCfgToLocation(routePoliciesCfg, &loc)
+				loc.Dos = dosRouteCfg
 
 				locations = append(locations, loc)
 				if returnLoc != nil {
@@ -2096,6 +2105,14 @@ func (vsc *virtualServerConfigurator) generateSSLConfig(owner runtime.Object, tl
 	}
 
 	return &ssl
+}
+
+func (vsc *virtualServerConfigurator) generateDos(vsr runtime.Object, resource *appProtectDosResource) *version2.Dos {
+	if !vsc.isDosEnabled && resource != nil {
+		vsc.addWarningf(vsr, "DOS is configured for VS, but DOS is not enabled")
+		return nil
+	}
+	return generateDosCfg(resource)
 }
 
 func generateTLSRedirectConfig(tls *conf_v1.TLS) *version2.TLSRedirect {
