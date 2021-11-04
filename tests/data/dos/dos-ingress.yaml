@@ -12,10 +12,6 @@ metadata:
     appprotectdos.f5.com/app-protect-dos-monitor: "dos.example.com"
     appprotectdos.f5.com/app-protect-dos-name: "dos.example.com"
 spec:
-  tls:
-  - hosts:
-    - dos.example.com
-    secretName: dos-secret
   rules:
   - host: dos.example.com
     http:
@@ -24,6 +20,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: backend1-svc
+            name: dos-svc
             port:
               number: 80

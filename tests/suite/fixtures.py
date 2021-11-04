@@ -46,6 +46,8 @@ from suite.resources_utils import (
     replace_configmap_from_yaml,
     delete_testing_namespaces,
     get_first_pod_name,
+    create_dos_arbitrator,
+    delete_dos_arbitrator,
 )
 from suite.resources_utils import (
     create_ingress_controller,
@@ -679,6 +681,12 @@ def crd_ingress_controller_with_dos(
             f"{DEPLOYMENTS}/common/crds/appprotectdos.f5.com_apdoslogconfs.yaml",
         )
 
+        print("------------------------- Create dos arbitrator -----------------------")
+        dos_arbitrator_name = create_dos_arbitrator(
+            kube_apis.v1,
+            kube_apis.apps_v1_api,
+            namespace,
+        )
         print("------------------------- Create IC -----------------------------------")
         name = create_ingress_controller(
             kube_apis.v1,
@@ -704,6 +712,10 @@ def crd_ingress_controller_with_dos(
         )
         print("Remove ap-rbac")
         cleanup_rbac(kube_apis.rbac_v1, rbac)
+        print("Remove dos arbitrator:")
+        delete_dos_arbitrator(
+            kube_apis.apps_v1_api, dos_arbitrator_name, namespace
+        )
         print("Remove the IC:")
         delete_ingress_controller(
             kube_apis.apps_v1_api, name, cli_arguments["deployment-type"], namespace
@@ -722,6 +734,10 @@ def crd_ingress_controller_with_dos(
         )
         print("Remove ap-rbac")
         cleanup_rbac(kube_apis.rbac_v1, rbac)
+        print("Remove dos arbitrator:")
+        delete_dos_arbitrator(
+            kube_apis.apps_v1_api, dos_arbitrator_name, namespace
+        )
         print("Remove the IC:")
         delete_ingress_controller(
             kube_apis.apps_v1_api, name, cli_arguments["deployment-type"], namespace
