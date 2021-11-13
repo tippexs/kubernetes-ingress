@@ -5,7 +5,7 @@ ARG UBI_VERSION=8
 ARG DOWNLOAD_TAG=edge
 
 ############################################# Base image for Debian #############################################
-FROM nginx:1.21.3 AS debian
+FROM nginx:1.21.4 AS debian
 
 RUN apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y libcap2-bin \
@@ -17,11 +17,11 @@ RUN apt-get update \
 
 ############################################# Base image for Alpine #############################################
 # docker.io/library/nginx is a temporary workaround for Dependabot to see this as different from the one used in Debian
-FROM docker.io/library/nginx:1.21.3-alpine AS alpine
+FROM docker.io/library/nginx:1.21.4-alpine AS alpine
 
 RUN apk add --no-cache libcap \
-	# temporary fix for CVE-2021-22945
-	&& apk upgrade --no-cache curl libcurl
+	# temporary fix for CVE-2021-42374
+	&& apk upgrade --no-cache busybox
 
 
 ############################################# Base image for Alpine with NGINX Plus #############################################
@@ -32,6 +32,8 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/apk/cert.pem,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/apk/cert.key,mode=0644 \
 	wget -nv -O /etc/apk/keys/nginx_signing.rsa.pub https://cs.nginx.com/static/keys/nginx_signing.rsa.pub \
 	&& printf "%s\n" "https://pkgs.nginx.com/plus/alpine/v$(grep -E -o '^[0-9]+\.[0-9]+' /etc/alpine-release)/main" >> /etc/apk/repositories \
+	# temporary fix for CVE-2021-42374
+	&& apk upgrade --no-cache busybox \
 	&& apk add --no-cache libcap nginx-plus~${NGINX_PLUS_VERSION#r} nginx-plus-module-njs~${NGINX_PLUS_VERSION#r}
 
 
@@ -46,8 +48,8 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
 	apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y ca-certificates gnupg curl apt-transport-https libcap2-bin libtiff5 \
-	&& curl -sSL https://cs.nginx.com/static/keys/nginx_signing.key | gpg --dearmor > /etc/apt/trusted.gpg.d/nginx_signing.gpg \
-	&& curl -sSL -o /etc/apt/apt.conf.d/90pkgs-nginx https://cs.nginx.com/static/files/90pkgs-nginx \
+	&& curl -fsSL https://cs.nginx.com/static/keys/nginx_signing.key | gpg --dearmor > /etc/apt/trusted.gpg.d/nginx_signing.gpg \
+	&& curl -fsSL -o /etc/apt/apt.conf.d/90pkgs-nginx https://cs.nginx.com/static/files/90pkgs-nginx \
 	&& printf "%s\n" "Acquire::https::pkgs.nginx.com::User-Agent \"k8s-ic-$IC_VERSION${BUILD_OS##debian-plus}-apt\";" >> /etc/apt/apt.conf.d/90pkgs-nginx \
 	&& printf "%s\n" "deb https://pkgs.nginx.com/plus/${NGINX_PLUS_VERSION^^}/debian buster nginx-plus" > /etc/apt/sources.list.d/nginx-plus.list \
 	&& apt-get update \
@@ -65,7 +67,7 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
 	apt-get update \
 	&& apt-get install --no-install-recommends --no-install-suggests -y gnupg curl apt-transport-https \
-	&& curl -sSL https://cs.nginx.com/static/keys/app-protect-security-updates.key | gpg --dearmor > /etc/apt/trusted.gpg.d/nginx_app_signing.gpg \
+	&& curl -fsSL https://cs.nginx.com/static/keys/app-protect-security-updates.key | gpg --dearmor > /etc/apt/trusted.gpg.d/nginx_app_signing.gpg \
 	&& printf "%s\n" "deb https://pkgs.nginx.com/app-protect/${NGINX_PLUS_VERSION^^}/debian buster nginx-plus" \
 	"deb https://pkgs.nginx.com/app-protect-security-updates/debian buster nginx-plus" > /etc/apt/sources.list.d/nginx-app-protect.list \
 	&& apt-get update \
@@ -83,8 +85,8 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 ############################################# Base image for UBI 8 #############################################
 FROM redhat/ubi8-minimal AS ubi-base-8
 
-# temporary fix for CVE-2021-22946, CVE-2021-22947, CVE-2021-33928, CVE-2021-33929, CVE-2021-33930, CVE-2021-33938
-RUN microdnf upgrade -y curl libsolv
+# temporary fix for CVE-2021-42574
+RUN microdnf upgrade -y libgcc libstdc++
 
 
 ############################################# Base image for UBI 7 #############################################
@@ -133,7 +135,7 @@ ARG NGINX_PLUS_VERSION
 RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode=0644 \
 	--mount=type=secret,id=nginx-repo.key,dst=/etc/ssl/nginx/nginx-repo.key,mode=0644 \
 	rpm --import https://cs.nginx.com/static/keys/nginx_signing.key \
-	&& curl -sS "https://cs.nginx.com/static/files/nginx-plus-$(grep -E -o '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d"." -f1).repo" | tr 0 1 > /etc/yum.repos.d/nginx-plus.repo \
+	&& curl -fsSL "https://cs.nginx.com/static/files/nginx-plus-$(grep -E -o '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d"." -f1).repo" | tr 0 1 > /etc/yum.repos.d/nginx-plus.repo \
 	&& microdnf --nodocs install -y nginx-plus-${NGINX_PLUS_VERSION} nginx-plus-module-njs-${NGINX_PLUS_VERSION}
 
 
@@ -148,7 +150,7 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 	&& subscription-manager register --org=${RHEL_ORGANIZATION} --activationkey=${RHEL_ACTIVATION_KEY} || true \
 	&& subscription-manager attach \
 	&& set -x \
-	&& curl -sS https://cs.nginx.com/static/files/app-protect-7.repo > /etc/yum.repos.d/app-protect-7.repo \
+	&& curl -fsSL https://cs.nginx.com/static/files/app-protect-7.repo > /etc/yum.repos.d/app-protect-7.repo \
 	&& subscription-manager repos --enable rhel-7-server-optional-rpms --enable rhel-7-server-extras-rpms \
 	&& rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
 	&& yum clean all \
@@ -162,7 +164,7 @@ RUN --mount=type=secret,id=nginx-repo.crt,dst=/etc/ssl/nginx/nginx-repo.crt,mode
 
 
 ############################################# Base image containing libs for Opentracing #############################################
-FROM opentracing/nginx-opentracing:nginx-1.21.3 as opentracing-lib
+FROM opentracing/nginx-opentracing:nginx-1.21.4 as opentracing-lib
 
 
 ############################################# Build image for Opentracing #############################################
