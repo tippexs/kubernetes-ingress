@@ -88,11 +88,11 @@ runs:
       working-directory: ./tests
       shell: bash
 
-    - name: Setup Kubeconfig
-      run: |
-        sed -i 's|server:.*|server: https://${{ steps.k8s.outputs.cluster_ip }}:6443|' kube-${{ github.run_id }}
-      working-directory: ./tests
-      shell: bash
+    # - name: Setup Kubeconfig
+    #   run: |
+    #     sed -i 's|server:.*|server: https://${{ steps.k8s.outputs.cluster_ip }}:6443|' kube-${{ github.run_id }}
+    #   working-directory: ./tests
+    #   shell: bash
 
     - uses: actions/setup-python@v2
       with:
@@ -115,7 +115,7 @@ runs:
         --image=docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} \
         --image-pull-policy=Never \
         --ic-type=${{ steps.ingress-type.outputs.name }} \
-        --service=nodeport --node-ip=${{ steps.k8s.outputs.cluster_ip }} \
+        --service=nodeport --node-ip=127.0.0.1 \
         --html=tests-${{ steps.k8s.outputs.cluster }}.html \
         --self-contained-html \
         --show-ic-logs=yes --profile -vv -l \
