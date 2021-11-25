@@ -115,10 +115,10 @@ runs:
         --image=docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} \
         --image-pull-policy=Never \
         --ic-type=${{ steps.ingress-type.outputs.name }} \
-        --service=nodeport --node-ip=127.0.0.1 \
+        --service=nodeport --node-ip=localhost \
         --html=tests-${{ steps.k8s.outputs.cluster }}.html \
         --self-contained-html \
-        --show-ic-logs=yes --profile -vv -l -x \
+        --show-ic-logs=yes --profile -vv -l -x -ra \
         -m ${{ inputs.marker != '' && inputs.marker || '""' }}
       working-directory: ./tests
       shell: bash
