@@ -1,7 +1,8 @@
 """Describe project shared pytest fixtures."""
 
 import time
-import os, re
+import os
+import re
 import pytest
 import yaml
 import subprocess
@@ -259,7 +260,7 @@ def ingress_controller_endpoint(
         port, port_ssl, api_port, metrics_port, tcp_server_port, udp_server_port = get_service_node_ports(
             kube_apis.v1, service_name, namespace
         )
-        return PublicEndpoint(public_ip, port, port_ssl, api_port, metrics_port, tcp_server_port, udp_server_port)
+        return PublicEndpoint(public_ip)
     else:
         create_service_from_yaml(
             kube_apis.v1,
@@ -633,6 +634,7 @@ def crd_ingress_controller_with_ap(
             kube_apis.apps_v1_api, name, cli_arguments["deployment-type"], namespace
         )
         pytest.fail("IC setup failed")
+
     def fin():
         print("--------------Cleanup----------------")
         delete_crd(
@@ -706,7 +708,6 @@ class VirtualServerSetup:
         self.metrics_url = (
             f"http://{public_endpoint.public_ip}:{public_endpoint.metrics_port}/metrics"
         )
-
 
 
 @pytest.fixture(scope="class")
