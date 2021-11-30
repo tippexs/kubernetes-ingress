@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/client_golang/prometheus"
 	networking "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1175,7 +1176,7 @@ func TestUpdateApResources(t *testing.T) {
 	for _, test := range tests {
 		result := conf.updateApResources(test.ingEx)
 		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("updateApResources() returned \n%v but exexpected\n%v for the case of %s", result, test.expected, test.msg)
+			t.Errorf("updateApResources() returned \n%v but expected\n%v for the case of %s", result, test.expected, test.msg)
 		}
 	}
 }
@@ -1282,8 +1283,8 @@ func TestUpdateApResourcesForVs(t *testing.T) {
 
 	for _, test := range tests {
 		result := conf.updateApResourcesForVs(test.vsEx)
-		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("updateApResourcesForVs() returned \n%v but exexpected\n%v for the case of %s", result, test.expected, test.msg)
+		if diff := cmp.Diff(test.expected, result); diff != "" {
+			t.Errorf("updateApResourcesForVs() '%s' mismatch (-want +got):\n%s", test.msg, diff)
 		}
 	}
 }
