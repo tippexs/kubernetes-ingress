@@ -30,7 +30,6 @@ defaults:
 
 env:
   K8S_VERSION: 1.22.4
-  K8S_TIMEOUT: 75s
   HELM_CHART_DIR: deployments/helm-chart
   GIT_NAME: NGINX Kubernetes Team
   GIT_MAIL: kubernetes@nginx.com
@@ -224,7 +223,7 @@ jobs:
       - name: Deploy Kubernetes
         id: k8s
         run: |
-          kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ env.K8S_VERSION }} --wait ${{ env.K8S_TIMEOUT }}
+          kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ env.K8S_VERSION }} --wait 75s
           kind load docker-image nginx-ingress:${{ github.sha }} --name ${{ github.run_id }}
       - name: Install Chart
         run: >

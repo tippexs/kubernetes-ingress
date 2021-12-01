@@ -6,10 +6,6 @@ inputs:
   k8s-version:
     description: Kubernetes version to use
     required: false
-  k8s-timeout:
-    description: Timeout to use
-    default: 75s
-    required: false
   image:
     description: Docker image to use
     default: debian
@@ -67,35 +63,15 @@ runs:
           "nginx-repo.crt=${{ inputs.nginx-crt }}"
           "nginx-repo.key=${{ inputs.nginx-key }}"
 
-    # - name: Build Test-Runner Container
-    #   uses: docker/build-push-action@v2
-    #   with:
-    #     file: tests/docker/Dockerfile
-    #     context: '.'
-    #     cache-from: type=gha,scope=test-runner
-    #     cache-to: type=gha,scope=test-runner,mode=max
-    #     tags: test-runner:${{ github.sha }}
-    #     pull: true
-    #     load: true
-
     - name: Deploy Kubernetes
       id: k8s
       run: |
-        # kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ inputs.k8s-version }} --config ${{ github.workspace }}/tests/ci-files/ci-kind-config.yaml --kubeconfig kube-${{ github.run_id }} --wait ${{ inputs.k8s-timeout }}
-        # kind load docker-image docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} --name ${{ github.run_id }}
-        minikube start --kubernetes-version=v${{ inputs.k8s-version }}
+        minikube start --kubernetes-version=v${{ inputs.k8s-version }} --wait=all
         minikube image load docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }}
-        # echo ::set-output name=cluster_ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ github.run_id }}-control-plane)
         echo ::set-output name=cluster_ip::$(minikube ip)
         echo ::set-output name=cluster::$(echo nginx-${{ inputs.image }}-${{ inputs.marker != '' && inputs.marker || inputs.k8s-version }})
       working-directory: ./tests
       shell: bash
-
-    # - name: Setup Kubeconfig
-    #   run: |
-    #     sed -i 's|server:.*|server: https://${{ steps.k8s.outputs.cluster_ip }}:6443|' kube-${{ github.run_id }}
-    #   working-directory: ./tests
-    #   shell: bash
 
     - uses: actions/setup-python@v2
       with:
@@ -105,7 +81,7 @@ runs:
 
     - name: Install dependencies
       run: |
-        # python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --upgrade pip setuptools wheel
         pip install -r tests/requirements.txt
       shell: bash
 
