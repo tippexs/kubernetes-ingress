@@ -260,7 +260,7 @@ def ingress_controller_endpoint(
         port, port_ssl, api_port, metrics_port, tcp_server_port, udp_server_port = get_service_node_ports(
             kube_apis.v1, service_name, namespace
         )
-        return PublicEndpoint(public_ip)
+        return PublicEndpoint(public_ip, port, port_ssl, api_port, metrics_port, tcp_server_port, udp_server_port)
     else:
         create_service_from_yaml(
             kube_apis.v1,
@@ -272,7 +272,7 @@ def ingress_controller_endpoint(
         return PublicEndpoint(public_ip)
 
 
-@pytest.fixture(scope="session")
+@ pytest.fixture(scope="session")
 def ingress_controller_prerequisites(
     cli_arguments, kube_apis, request
 ) -> IngressControllerPrerequisites:
@@ -325,7 +325,7 @@ def ingress_controller_prerequisites(
     return IngressControllerPrerequisites(config_map, namespace)
 
 
-@pytest.fixture(scope="session")
+@ pytest.fixture(scope="session")
 def kube_apis(cli_arguments) -> KubeApis:
     """
     Set up kubernets-client to operate in cluster.
@@ -347,7 +347,7 @@ def kube_apis(cli_arguments) -> KubeApis:
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@ pytest.fixture(scope="session", autouse=True)
 def cli_arguments(request) -> {}:
     """
     Verify the CLI arguments.
@@ -399,7 +399,7 @@ def cli_arguments(request) -> {}:
     return result
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def crd_ingress_controller(
     cli_arguments, kube_apis, ingress_controller_prerequisites, ingress_controller_endpoint, request
 ) -> None:
@@ -505,7 +505,7 @@ def crd_ingress_controller(
     request.addfinalizer(fin)
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def crd_ingress_controller_with_ap(
     cli_arguments, kube_apis, ingress_controller_prerequisites, ingress_controller_endpoint, request
 ) -> None:
@@ -710,7 +710,7 @@ class VirtualServerSetup:
         )
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def virtual_server_setup(
     request, kube_apis, ingress_controller_endpoint, test_namespace
 ) -> VirtualServerSetup:
@@ -769,7 +769,7 @@ class TransportServerSetup:
         self.resource = resource
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def transport_server_setup(
         request, kube_apis, ingress_controller_prerequisites, test_namespace, ingress_controller_endpoint
 ) -> TransportServerSetup:
@@ -826,7 +826,7 @@ def transport_server_setup(
     )
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def v_s_route_app_setup(request, kube_apis, v_s_route_setup) -> None:
     """
     Prepare an example app for Virtual Server Route.
@@ -924,7 +924,7 @@ class VirtualServerRouteSetup:
         self.route_s = route_s
 
 
-@pytest.fixture(scope="class")
+@ pytest.fixture(scope="class")
 def v_s_route_setup(request, kube_apis, ingress_controller_endpoint) -> VirtualServerRouteSetup:
     """
     Prepare Virtual Server Route Example.
@@ -997,7 +997,7 @@ def v_s_route_setup(request, kube_apis, ingress_controller_endpoint) -> VirtualS
     )
 
 
-@pytest.fixture(scope="function")
+@ pytest.fixture(scope="function")
 def restore_configmap(request, kube_apis, ingress_controller_prerequisites, test_namespace) -> None:
     """
     Return ConfigMap to the initial state after the test.

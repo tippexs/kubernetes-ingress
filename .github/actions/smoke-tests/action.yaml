@@ -81,9 +81,12 @@ runs:
     - name: Deploy Kubernetes
       id: k8s
       run: |
-        kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ inputs.k8s-version }} --config ${{ github.workspace }}/tests/ci-files/ci-kind-config.yaml --kubeconfig kube-${{ github.run_id }} --wait ${{ inputs.k8s-timeout }}
-        kind load docker-image docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} --name ${{ github.run_id }}
-        echo ::set-output name=cluster_ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ github.run_id }}-control-plane)
+        # kind create cluster --name ${{ github.run_id }} --image=kindest/node:v${{ inputs.k8s-version }} --config ${{ github.workspace }}/tests/ci-files/ci-kind-config.yaml --kubeconfig kube-${{ github.run_id }} --wait ${{ inputs.k8s-timeout }}
+        # kind load docker-image docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} --name ${{ github.run_id }}
+        minikube start --memory 6144 --cpus 2 --kubernetes-version=v${{ inputs.k8s-version }}
+        minikube image load docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }}
+        # echo ::set-output name=cluster_ip::$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ github.run_id }}-control-plane)
+        echo ::set-output name=cluster_ip::$(minikube ip)
         echo ::set-output name=cluster::$(echo nginx-${{ inputs.image }}-${{ inputs.marker != '' && inputs.marker || inputs.k8s-version }})
       working-directory: ./tests
       shell: bash
@@ -110,12 +113,10 @@ runs:
       run: |
         touch tests-${{ steps.k8s.outputs.cluster }}.html
         python -m pytest \
-        --context=kind-${{ github.run_id }} \
-        --kubeconfig=kube-${{ github.run_id }} \
         --image=docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }} \
         --image-pull-policy=Never \
         --ic-type=${{ steps.ingress-type.outputs.name }} \
-        --service=nodeport --node-ip=localhost \
+        --service=nodeport --node-ip=${{ steps.k8s.outputs.cluster_ip }} \
         --html=tests-${{ steps.k8s.outputs.cluster }}.html \
         --self-contained-html \
         --show-ic-logs=yes --profile -vv -l -x -ra \
