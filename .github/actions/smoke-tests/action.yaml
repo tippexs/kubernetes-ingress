@@ -66,7 +66,7 @@ runs:
     - name: Deploy Kubernetes
       id: k8s
       run: |
-        minikube start --kubernetes-version=v${{ inputs.k8s-version }} --wait=all
+        minikube start --kubernetes-version=v${{ inputs.k8s-version }} --wait=all --memory 4096
         minikube image load docker.io/nginx/${{ steps.ingress-type.outputs.name }}:${{ inputs.image }}-${{ github.sha }}
         echo ::set-output name=cluster_ip::$(minikube ip)
         echo ::set-output name=cluster::$(echo nginx-${{ inputs.image }}-${{ inputs.marker != '' && inputs.marker || inputs.k8s-version }})
