@@ -1,19 +1,12 @@
 """Describe overall framework configuration."""
 
 import os
-import pytest
 
+import pytest
 from kubernetes.config.kube_config import KUBE_CONFIG_DEFAULT_LOCATION
-from settings import (
-    DEFAULT_IMAGE,
-    DEFAULT_PULL_POLICY,
-    DEFAULT_IC_TYPE,
-    DEFAULT_SERVICE,
-    DEFAULT_DEPLOYMENT_TYPE,
-    NUM_REPLICAS,
-    BATCH_START,
-    BATCH_RESOURCES,
-)
+from settings import (BATCH_RESOURCES, BATCH_START, DEFAULT_DEPLOYMENT_TYPE,
+                      DEFAULT_IC_TYPE, DEFAULT_IMAGE, DEFAULT_PULL_POLICY,
+                      DEFAULT_SERVICE, NUM_REPLICAS)
 from suite.resources_utils import get_first_pod_name
 
 
@@ -51,7 +44,7 @@ def pytest_addoption(parser) -> None:
         "--ic-type",
         action="store",
         default=DEFAULT_IC_TYPE,
-        help="The type of the Ingress Controller: nginx-ingress or nginx-ingress-plus.",
+        help="The type of the Ingress Controller: nginx-ingress or nginx-plus-ingress.",
     )
     parser.addoption(
         "--service",
@@ -124,7 +117,7 @@ def pytest_collection_modifyitems(config, items) -> None:
         for item in items:
             if "appprotect" in item.keywords:
                 item.add_marker(appprotect)
-    if  str(config.getoption("--batch-start")) != "True":
+    if str(config.getoption("--batch-start")) != "True":
         batch_start = pytest.mark.skip(reason="Skipping pod restart test with multiple resources")
         for item in items:
             if "batch_start" in item.keywords:

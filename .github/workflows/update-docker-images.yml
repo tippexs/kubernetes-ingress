@@ -92,6 +92,15 @@ jobs:
         with:
           fetch-depth: 0
           ref: refs/tags/v${{ needs.variables.outputs.kic-tag }}
+      - name: Cache Go build
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
       - name: Setup Golang Environment
         uses: actions/setup-go@v2
         with:
@@ -233,7 +242,7 @@ jobs:
             IC_VERSION=v${{ needs.variables.outputs.kic-tag }}
         if: ${{ matrix.needs-updating == 'true' }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.1.0
+        uses: aquasecurity/trivy-action@0.2.0
         continue-on-error: true
         with:
           image-ref: nginx/nginx-ingress:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
