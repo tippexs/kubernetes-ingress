@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -21,6 +22,34 @@ var appProtectLogConfRequiredFields = [][]string{
 
 var appProtectUserSigRequiredSlices = [][]string{
 	{"spec", "signatures"},
+}
+
+var appProtectPolicyExtRefs = [][]string{
+	{"spec", "policy", "modificationsReference"},
+	{"spec", "policy", "blockingSettingReference"},
+	{"spec", "policy", "signatureSettingReference"},
+	{"spec", "policy", "serverTechnologyReference"},
+	{"spec", "policy", "headerReference"},
+	{"spec", "policy", "cookieReference"},
+	{"spec", "policy", "dataGuardReference"},
+	{"spec", "policy", "filetypeReference"},
+	{"spec", "policy", "methodReference"},
+	{"spec", "policy", "generalReference"},
+	{"spec", "policy", "parameterReference"},
+	{"spec", "policy", "sensitiveParameterReference"},
+	{"spec", "policy", "jsonProfileReference"},
+	{"spec", "policy", "xmlProfileReference"},
+	{"spec", "policy", "whitelistIpReference"},
+	{"spec", "policy", "responsePageReference"},
+	{"spec", "policy", "characterSetReference"},
+	{"spec", "policy", "cookieSettingsReference"},
+	{"spec", "policy", "headerSettingsReference"},
+	{"spec", "policy", "jsonValidationFileReference"},
+	{"spec", "policy", "xmlValidationFileReference"},
+	{"spec", "policy", "signatureSetReference"},
+	{"spec", "policy", "signatureReference"},
+	{"spec", "policy", "urlReference"},
+	{"spec", "policy", "threatCampaignReference"},
 }
 
 func validateRequiredFields(obj *unstructured.Unstructured, fieldsList [][]string) error {
@@ -56,6 +85,17 @@ func validateAppProtectPolicy(policy *unstructured.Unstructured) error {
 	err := validateRequiredFields(policy, appProtectPolicyRequiredFields)
 	if err != nil {
 		return fmt.Errorf("Error validating App Protect Policy %v: %w", polName, err)
+	}
+
+	extRefs, err := checkForExtRefs(policy)
+	if err != nil {
+		return fmt.Errorf("Error validating App Protect Policy %v: %w", polName, err)
+	}
+
+	if len(extRefs) > 0 {
+		for _, ref := range extRefs {	
+			glog.V(2).Infof("Warning: Field %s (External reference) is Deprecated.", ref)
+		}
 	}
 
 	return nil
@@ -147,4 +187,19 @@ func validateAppProtectUserSig(userSig *unstructured.Unstructured) error {
 // GetNsName gets the key of a resource in the format: "resNamespace/resName"
 func GetNsName(obj *unstructured.Unstructured) string {
 	return obj.GetNamespace() + "/" + obj.GetName()
+}
+
+func checkForExtRefs(policy *unstructured.Unstructured) ([]string, error) {
+	polName := policy.GetName()
+	out := []string{}
+	for _, ref := range  appProtectPolicyExtRefs {
+		_, found, err := unstructured.NestedFieldNoCopy(policy.Object, ref...)
+		if err != nil {
+			return out, fmt.Errorf("Error validating App Protect Policy %v: %w", polName, err)
+		}
+		if found {
+			out = append(out, strings.Join(ref, "."))	
+		}
+	}
+	return out, nil
 }
