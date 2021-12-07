@@ -76,8 +76,8 @@ runs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-        cache: 'pip'
-        cache-dependency-path: '**/requirements.txt'
+        # cache: 'pip'
+        # cache-dependency-path: '**/requirements.txt'
 
     - name: Install dependencies
       run: |
