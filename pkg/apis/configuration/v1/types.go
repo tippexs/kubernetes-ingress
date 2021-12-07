@@ -110,6 +110,8 @@ type HealthCheck struct {
 	StatusMatch    string       `json:"statusMatch"`
 	GRPCStatus     *int         `json:"grpcStatus"`
 	GRPCService    string       `json:"grpcService"`
+	Mandatory      bool         `json:"mandatory"`
+	Persistent     bool         `json:"persistent"`
 }
 
 // Header defines an HTTP Header.

@@ -1310,6 +1310,10 @@ func generateHealthCheck(
 		hc.Match = generateStatusMatchName(upstreamName)
 	}
 
+	hc.Mandatory = upstream.HealthCheck.Mandatory
+
+	hc.Persistent = upstream.HealthCheck.Persistent
+
 	hc.GRPCStatus = upstream.HealthCheck.GRPCStatus
 
 	hc.GRPCService = upstream.HealthCheck.GRPCService
