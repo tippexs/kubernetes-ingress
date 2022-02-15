@@ -7,8 +7,18 @@ var newSession = false; // Used by oidcAuth() and validateIdToken()
 
 export default { auth, codeExchange, validateIdToken, logout };
 
+
+function inner(r) {
+  r.internalRedirect(r.variables.request_uri);
+}
+
 function auth(r) {
-    if (!r.variables.refresh_token || r.variables.refresh_token == "-") {
+   #Slow down request processing to give enough time for zone sync. HOTFIX! Not for production!
+   if (r.variables.cookie_auth_token != null && r.variables.session_jwt == null) {
+     var t = setTimeout(inner, 200, r);
+   }
+
+   if (!r.variables.refresh_token || r.variables.refresh_token == "-") {
         newSession = true;
 
         // Check we have all necessary configuration variables (referenced only by njs)
