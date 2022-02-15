@@ -13,7 +13,7 @@ function inner(r) {
 }
 
 function auth(r) {
-   #Slow down request processing to give enough time for zone sync. HOTFIX! Not for production!
+   //Slow down request processing to give enough time for zone sync. HOTFIX! Not for production!
    if (r.variables.cookie_auth_token != null && r.variables.session_jwt == null) {
      var t = setTimeout(inner, 200, r);
    }
