@@ -90,7 +90,7 @@ function auth(r) {
                         }
 
                         delete r.headersOut["WWW-Authenticate"]; // Remove evidence of original failed auth_jwt
-                        r.internalRedirect(r.variables.request_uri); // Continue processing original request
+                        r.internalRedirect(r.variables.uri); // Continue processing original request
                     }
                 );
             } catch (e) {
